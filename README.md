@@ -1,0 +1,1 @@
+The script lies under index.html, so that GitHub Pages serves it when heading to `https://get.silentnight.cc`. A little weird workaround but yeah.
