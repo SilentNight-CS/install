@@ -1,0 +1,60 @@
+# Define the URLs of the files to download
+$exeUrl = "http://localhost:8000/silentnight.exe"
+$dllUrl = "http://localhost:8000/game-module.dll"
+
+# Define the target directory
+$targetDir = "$env:USERPROFILE/.silentnight/"
+
+# Create the target directory if it doesn't exist
+if (!(Test-Path -Path $targetDir)) {
+   New-Item -ItemType Directory -Force -Path $targetDir -ErrorAction Stop
+}
+
+# Define the target file paths
+$exeTarget = Join-Path -Path $targetDir -ChildPath "silentnight.exe"
+$dllTarget = Join-Path -Path $targetDir -ChildPath "game-module.dll"
+
+# Download the exe file
+$exeRequest = Invoke-WebRequest -Uri $exeUrl -OutFile $exeTarget -ErrorAction Stop
+
+# Download the dll file
+$dllRequest = Invoke-WebRequest -Uri $dllUrl -OutFile $dllTarget -ErrorAction Stop
+
+# Add the target directory to the PATH environment variable
+$envPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+if ($envPath -notlike "*$targetDir*") {
+   [Environment]::SetEnvironmentVariable("Path", $envPath + ";$targetDir", [EnvironmentVariableTarget]::User)
+}
+
+function Show-Notification {
+   [cmdletbinding()]
+   Param (
+      [string]
+      $ToastTitle,
+      [string]
+      [parameter(ValueFromPipeline)]
+      $ToastText
+   )
+
+   [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null
+   $Template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+
+   $RawXml = [xml] $Template.GetXml()
+   ($RawXml.toast.visual.binding.text|where {$_.id -eq "1"}).AppendChild($RawXml.CreateTextNode($ToastTitle)) > $null
+   ($RawXml.toast.visual.binding.text|where {$_.id -eq "2"}).AppendChild($RawXml.CreateTextNode($ToastText)) > $null
+
+   $SerializedXml = New-Object Windows.Data.Xml.Dom.XmlDocument
+   $SerializedXml.LoadXml($RawXml.OuterXml)
+
+   $Toast = [Windows.UI.Notifications.ToastNotification]::new($SerializedXml)
+   $Toast.Tag = "PowerShell"
+   $Toast.Group = "PowerShell"
+   $Toast.ExpirationTime = [DateTimeOffset]::Now.AddMinutes(1)
+
+   $Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("PowerShell")
+   $Notifier.Show($Toast);
+}
+
+Show-Notification -ToastTitle "Installation Complete" -ToastText "Silent Night has been installed successfully."
+
+Start-Process "https://silentnight.cc/installed"
