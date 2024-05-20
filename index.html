@@ -1,26 +1,19 @@
-# Define the URLs of the files to download
-$exeUrl = "http://localhost:8000/silentnight.exe"
-$dllUrl = "http://localhost:8000/game-module.dll"
+$exeUrl = "https://api.silentnight.cc/download/binary"
+$dllUrl = "https://api.silentnight.cc/download/module"
 
-# Define the target directory
 $targetDir = "$env:USERPROFILE/.silentnight/"
 
-# Create the target directory if it doesn't exist
 if (!(Test-Path -Path $targetDir)) {
    New-Item -ItemType Directory -Force -Path $targetDir -ErrorAction Stop
 }
 
-# Define the target file paths
 $exeTarget = Join-Path -Path $targetDir -ChildPath "silentnight.exe"
 $dllTarget = Join-Path -Path $targetDir -ChildPath "game-module.dll"
 
-# Download the exe file
 $exeRequest = Invoke-WebRequest -Uri $exeUrl -OutFile $exeTarget -ErrorAction Stop
 
-# Download the dll file
 $dllRequest = Invoke-WebRequest -Uri $dllUrl -OutFile $dllTarget -ErrorAction Stop
 
-# Add the target directory to the PATH environment variable
 $envPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
 if ($envPath -notlike "*$targetDir*") {
    [Environment]::SetEnvironmentVariable("Path", $envPath + ";$targetDir", [EnvironmentVariableTarget]::User)
